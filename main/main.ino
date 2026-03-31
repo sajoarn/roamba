@@ -1,6 +1,7 @@
 //#include <hardwareSerial.h>
 #include <stdio.h>
 #include <string.h>
+#include "Arduino.h"
 #include "DeviceDriverSet_xxx0.h"
 
 #include "ArduinoJson-v6.11.1.h" //ArduinoJson
