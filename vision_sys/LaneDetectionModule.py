@@ -4,16 +4,21 @@ import utlis
 
 def getLaneCurve(img):
 
+    imgCopy=img.copy()
+
     ##STEP1 to find the lane
     imgThres= utlis.thresholding(img)
 
     ##STEP2: finding warpature of the lane
     h,w,c=img.shape
     points=utlis.valTrackbars()
-    imgWarp=utlis.warpImg(img,points,w,h)
+    imgWarp=utlis.warpImg(imgThres,points,w,h)
+    imgWarpPoints=utlis.drawPoints(imgCopy, points)
 
     cv2.imshow('Thres', imgThres) ##grayscale of the lane
     cv2.imshow('Warp', imgWarp) ##"birds eye" view of the lane
+    cv2.imshow('Warp Points', imgWarpPoints) #adding dots to the image to tell
+
 
     return None
 
@@ -23,10 +28,10 @@ def getLaneCurve(img):
 ###MAIN EXE
 if __name__=='__main__':
 
-    cap = cv2.VideoCapture(r"C:\Users\hussa\Documents\school\vid1.mp4") ##add the file path of the video here or replace with 0 for the camera
+    cap = cv2.VideoCapture(r"C:\Users\hussa\OneDrive\Desktop\Personal\Grad School\Purdue\ECE 568-Embedded Systems\Project\vid1.mp4") ##add the file path of the video here or replace with 0 for the camera
 
     #the next two lines is to help with cropping the video to find the lane from a "birds eye view"
-    initialTrackBarVals=[100,100,100,100]
+    initialTrackBarVals=[102,80,20,214]
     utlis.initializeTrackbars(initialTrackBarVals)
 
     frameCounter=0
@@ -50,7 +55,7 @@ if __name__=='__main__':
             print("End of video or failed to read frame")
             break
 
-        img = cv2.resize(img, dsize=(0,0), fx=0.5, fy=0.5)
+        img = cv2.resize(img, dsize=(0,0), fx=0.75, fy=0.5)
 
         getLaneCurve(img)
 

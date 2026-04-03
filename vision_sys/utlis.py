@@ -26,6 +26,7 @@ def warpImg(img,points,w,h):
     matrix= cv2.getPerspectiveTransform(pts1,pts2)
 
     imgWarp=cv2.warpPerspective(img, matrix, (w,h))
+
     return imgWarp
 
 def nothing(a):
@@ -39,7 +40,7 @@ def initializeTrackbars(intialTracbarVals,wT=480, hT=240):
     cv2.createTrackbar("Width Bottom", "Trackbars", intialTracbarVals[2],wT//2, nothing)
     cv2.createTrackbar("Height Bottom", "Trackbars", intialTracbarVals[3], hT, nothing)
 
-
+#using for finding the overall borders of the track
 def valTrackbars(wT=480, hT=240):
     widthTop = cv2.getTrackbarPos("Width Top", "Trackbars")
     heightTop = cv2.getTrackbarPos("Height Top", "Trackbars")
@@ -47,3 +48,11 @@ def valTrackbars(wT=480, hT=240):
     heightBottom = cv2.getTrackbarPos("Height Bottom", "Trackbars")
     points = np.float32([(widthTop, heightTop), (wT-widthTop, heightTop),
                       (widthBottom , heightBottom ), (wT-widthBottom, heightBottom)])
+    
+    return points
+
+##adds dots to the image to make a 'boundary"
+def drawPoints(img,points):
+    for x in range(4):
+        cv2.circle(img,(int(points[x][0]),int(points[x][1])),15,(0,255,0), cv2.FILLED) #video, points 1, point 2,size, rgb color, thickness
+    return img
