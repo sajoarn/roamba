@@ -15,9 +15,14 @@ def getLaneCurve(img):
     imgWarp=utlis.warpImg(imgThres,points,w,h)
     imgWarpPoints=utlis.drawPoints(imgCopy, points)
 
+    ##STEP3
+    basePoint,imgHist= utlis.getHistogram(imgWarp, display=True)
+
+    
     cv2.imshow('Thres', imgThres) ##grayscale of the lane
     cv2.imshow('Warp', imgWarp) ##"birds eye" view of the lane
     cv2.imshow('Warp Points', imgWarpPoints) #adding dots to the image to tell
+    cv2.imshow('Histogram', imgHist)   #display histogram
 
 
     return None

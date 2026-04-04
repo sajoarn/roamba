@@ -56,3 +56,26 @@ def drawPoints(img,points):
     for x in range(4):
         cv2.circle(img,(int(points[x][0]),int(points[x][1])),15,(0,255,0), cv2.FILLED) #video, points 1, point 2,size, rgb color, thickness
     return img
+
+def getHistogram(img,minPer=0.1,display=False):
+
+
+    histVal=np.sum(img,axis=0)
+    #print(histVal)
+    maxVal=np.max(histVal)
+    minVal=minPer*maxVal
+
+    #list of array that's greater than min val to filter noise
+    indexArray=np.where(histVal>=minVal)
+    basePoint=int(np.average(indexArray))
+    print(basePoint)
+
+    ##this is to help with determining the center of the overhead view of the lane using histogram
+    if display:
+        imgHist=np.zeros((img.shape[0], img.shape[1],3), np.uint8)
+        for x,intensity in enumerate(histVal):
+            cv2.line(imgHist,(x,img.shape[0]),(x,img.shape[0]-intensity//255),(255,0,255),1)
+            cv2.circle(imgHist,(basePoint,img.shape[0]),20,(0.255,255),cv2.FILLED)
+
+        return basePoint, imgHist
+    return basePoint
