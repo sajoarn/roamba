@@ -14,7 +14,7 @@ def thresholding(img):
     return maskWhite
 
 
-def warpImg(img,points,w,h):
+def warpImg(img,points,w,h, inv=False):
     #if statement for debugging 
     if points is None or len(points) != 4:
         print("Error: warpImg requires exactly 4 points. Got:", points)
@@ -23,7 +23,11 @@ def warpImg(img,points,w,h):
     
     pts1= np.float32(points)
     pts2= np.float32([[0,0], [w,0], [0,h], [w,h]]) #used for transformation matrix to determine curvature
-    matrix= cv2.getPerspectiveTransform(pts1,pts2)
+
+    if inv:
+        matrix= cv2.getPerspectiveTransform(pts2,pts1)
+    else:
+        matrix= cv2.getPerspectiveTransform(pts1,pts2)
 
     imgWarp=cv2.warpPerspective(img, matrix, (w,h))
 
@@ -57,8 +61,13 @@ def drawPoints(img,points):
         cv2.circle(img,(int(points[x][0]),int(points[x][1])),15,(0,255,0), cv2.FILLED) #video, points 1, point 2,size, rgb color, thickness
     return img
 
-def getHistogram(img,minPer=0.1,display=False):
+def getHistogram(img,minPer=0.1,display=False,region=1):
 
+    #help define which region of the image we are looking at
+    if region == 1:
+        histVal=np.sum(img,axis=0)
+    else:
+        histVal=np.sum(img[img.shape[0]//region:,:],axis=0)
 
     histVal=np.sum(img,axis=0)
     #print(histVal)
@@ -68,14 +77,47 @@ def getHistogram(img,minPer=0.1,display=False):
     #list of array that's greater than min val to filter noise
     indexArray=np.where(histVal>=minVal)
     basePoint=int(np.average(indexArray))
-    print(basePoint)
+    #print(basePoint)
 
     ##this is to help with determining the center of the overhead view of the lane using histogram
     if display:
         imgHist=np.zeros((img.shape[0], img.shape[1],3), np.uint8)
         for x,intensity in enumerate(histVal):
-            cv2.line(imgHist,(x,img.shape[0]),(x,img.shape[0]-intensity//255),(255,0,255),1)
+            cv2.line(imgHist,(x,img.shape[0]),(x,img.shape[0]-intensity//255//region),(255,0,255),1)
             cv2.circle(imgHist,(basePoint,img.shape[0]),20,(0.255,255),cv2.FILLED)
 
         return basePoint, imgHist
     return basePoint
+
+
+
+def stackImages(scale,imgArray):
+    rows = len(imgArray)
+    cols = len(imgArray[0])
+    rowsAvailable = isinstance(imgArray[0], list)
+    width = imgArray[0][0].shape[1]
+    height = imgArray[0][0].shape[0]
+    if rowsAvailable:
+        for x in range ( 0, rows):
+            for y in range(0, cols):
+                if imgArray[x][y].shape[:2] == imgArray[0][0].shape [:2]:
+                    imgArray[x][y] = cv2.resize(imgArray[x][y], (0, 0), None, scale, scale)
+                else:
+                    imgArray[x][y] = cv2.resize(imgArray[x][y], (imgArray[0][0].shape[1], imgArray[0][0].shape[0]), None, scale, scale)
+                if len(imgArray[x][y].shape) == 2: imgArray[x][y]= cv2.cvtColor( imgArray[x][y], cv2.COLOR_GRAY2BGR)
+        imageBlank = np.zeros((height, width, 3), np.uint8)
+        hor = [imageBlank]*rows
+        hor_con = [imageBlank]*rows
+        for x in range(0, rows):
+            hor[x] = np.hstack(imgArray[x])
+        ver = np.vstack(hor)
+    else:
+        for x in range(0, rows):
+            if imgArray[x].shape[:2] == imgArray[0].shape[:2]:
+                imgArray[x] = cv2.resize(imgArray[x], (0, 0), None, scale, scale)
+            else:
+                imgArray[x] = cv2.resize(imgArray[x], (imgArray[0].shape[1], imgArray[0].shape[0]), None,scale, scale)
+            if len(imgArray[x].shape) == 2: imgArray[x] = cv2.cvtColor(imgArray[x], cv2.COLOR_GRAY2BGR)
+        hor= np.hstack(imgArray)
+        ver = hor
+    return ver
