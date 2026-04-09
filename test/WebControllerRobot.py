@@ -7,6 +7,7 @@
 # To get this running for testing use in RPi terminal:
 # pip install flask 
 # pip install pyserial
+# The Raspberry Pi is connected to Arduino via USB
 from flask import Flask, render_template_string, request
 import serial
 import time
