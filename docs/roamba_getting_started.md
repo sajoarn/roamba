@@ -13,7 +13,8 @@ The Robotic Observation and Autonomous Mobility Boundary Analyzer (R.O.A.M-B.A) 
     - FastLED
     - MPU6050 by Electronic Cats
 4. Sketch -> Verify/Compile
-5. Upload (check button)
+5. On the Uno's top board, move the switch from "Cam" to "Upload"
+6. In the IDE, select "Upload"
 
 ## Raspberry Pi
 1. Setup python virtual environment:
