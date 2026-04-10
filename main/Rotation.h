@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include "Gyro.h"
-#include "MotorControl.h"
+#include "MotorController.h"
 #include "Ultrasonic.h"
 
 // Standard procedural functions that accept the hardware objects they need to manipulate

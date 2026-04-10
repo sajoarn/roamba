@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include "Arduino.h"
-#include "DeviceDriverSet_xxx0.h"
 
 #include "MotorController.h"
 #include "Ultrasonic.h"
@@ -13,7 +12,7 @@
 MotorController motor;
 Ultrasonic ultrasonic;
 Gyro gyro;
-DeviceDriverSet_Servo AppServo;
+//DeviceDriverSet_Servo AppServo;
 
 // ==========================================
 // 1. THE CENTRAL MAILBOX (Global Data)
@@ -103,6 +102,8 @@ void Navigation() {
         motor.moveForward(CRUISE_SPEED,durationMs); // Updated
     }
 }
+unsigned long lastDebugTime = 0;
+int debugSequence = 0;
 void simulateDebugCommands() {
     // Only change the command every 2000 milliseconds (2 seconds)
     if (millis() - lastDebugTime > 2000) {

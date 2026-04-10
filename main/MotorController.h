@@ -8,8 +8,8 @@ class MotorController {
     // In-class initialization: Setting the "factory defaults"
     uint8_t PWMA = 5;
     uint8_t PWMB = 6;
-    uint8_t AIN = 7;
-    uint8_t BIN = 8;
+    uint8_t A_IN = 7;
+    uint8_t B_IN = 8;
     uint8_t STBY = 3;
     int speedCar = 100;
 

@@ -1,22 +1,21 @@
 #include "Gyro.h"
 
-MPU6050 mpu;
-float yaw = 0;
-unsigned long lastTime = 0;
+Gyro::Gyro() {
+}
 
-void initGyro() {
+void Gyro::initGyro() {
     Wire.begin();
     mpu.initialize();
     delay(1000);
     lastTime = micros();
 }
 
-void resetYaw() {
+void Gyro::resetYaw() {
     yaw = 0;
     lastTime = micros();
 }
 
-void updateYaw() {
+void Gyro::updateYaw() {
     unsigned long now = micros();
     float dt = (now - lastTime) / 1000000.0;
     lastTime = now;
