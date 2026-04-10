@@ -1,10 +1,18 @@
 #include <stdio.h>
 #include <string.h>
+
 #include "Arduino.h"
 #include "DeviceDriverSet_xxx0.h"
 
-DeviceDriverSet_Motor AppMotor;
-DeviceDriverSet_ULTRASONIC AppULTRASONIC;
+#include "MotorController.h"
+#include "Ultrasonic.h"
+#include "Gyro.h"
+#include "Rotation.h"
+
+
+MotorController motor;
+Ultrasonic ultrasonic;
+Gyro gyro;
 DeviceDriverSet_Servo AppServo;
 
 // ==========================================
@@ -28,6 +36,7 @@ VehicleData robotData; // Create our mailbox
 // System configuration
 const uint16_t CRITICAL_DISTANCE_CM = 20; 
 const uint8_t CRUISE_SPEED = 150;
+int durationMs = 1000; // Default duration for forward/backward commands
 
 unsigned long lastSonarTime = 0;
 unsigned long lastPiTime = 0;
@@ -36,23 +45,64 @@ unsigned long lastPiTime = 0;
 // 2. DATA COLLECTION FUNCTIONS
 // ==========================================
 
+void serialEvent() {
+    while (Serial.available()) {
+        char c = (char)Serial.read();
+        if (c == '\n') {
+            stringComplete = true;
+            return;
+        }
+        inputString += c;
+    }
+}
+
+void processCommand(String cmd) {
+    cmd.trim();
+    if (cmd.length() == 0) return;
+
+    Serial.print("CMD: ");
+    Serial.println(cmd);
+
+    if (cmd.indexOf(':') != -1) {
+        char action = cmd.charAt(0);
+        float value = cmd.substring(2).toFloat();
+
+        switch (action) {
+            case 'L': rotateLeftDegrees(value); break;
+            case 'R': rotateRightDegrees(value); break;
+            case 'F': forwardUntilBlocked(speedCar, (unsigned long)value); break;
+            case 'B': reverseUntilBlocked(speedCar, (unsigned long)value); break;
+        }
+    } else {
+        if (cmd == "S") stopMotors();
+    }
+}
+
 void updateUltrasonicData() {
     // Only check the sensor every 50 milliseconds
-    if (millis() - lastSonarTime >= 50) {
+    if (millis() - lastSonarTime >= SONAR_INTERVAL) {
         lastSonarTime = millis();
-        
-        robotData.frontDistance = AppULTRASONIC.DeviceDriverSet_ULTRASONIC_Get();
-        
-        if (robotData.frontDistance > 0 && robotData.frontDistance < CRITICAL_DISTANCE_CM) {
-            robotData.obstacleDetected = true;
-        } else {
-            robotData.obstacleDetected = false;
-        }
+        // Updated to use the new 'ultrasonic' name
+        robotData.obstacleDetected = ultrasonic.obstacleDetected();
     }
 }
 
 void updateRaspberryPiData() {
-// check on rasberry pi data
+if (Serial.available() > 0) {
+        String incomingData = Serial.readStringUntil('\n');
+        incomingData.trim();
+        if (incomingData.length() == 0) return;
+        if (incomingData.indexOf(':') != -1) {
+            char action = incomingData.charAt(0);
+            float value = incomingData.substring(2).toFloat();
+
+            switch (action) {
+                case 'L': robotData.targetSteeringAngle = -value; break; // Left is negative
+                case 'R': robotData.targetSteeringAngle = value; break;  // Right is positive
+                case 'S': robotData.stopSignDetected = (value > 0); break;
+            }
+        }
+    }
 }
 
 // ==========================================
@@ -60,26 +110,30 @@ void updateRaspberryPiData() {
 // ==========================================
 
 void Navigation() {
-    // 1. Safety always comes first: Check the ultrasonic flag
+
     if (robotData.obstacleDetected) {
-        // Stop immediately
-        AppMotor.DeviceDriverSet_Motor_control(direction_void, 0, direction_void, 0, false);
-        Serial.println("ALERT: Obstacle Detected! Halting.");
-        
-        // (Insert backup or turn around code here)
-        return; // Exit the function immediately so we do not process Pi commands
+        motor.moveBackward(CRUISE_SPEED,durationMs);
+        motor.stopMotors(); // Updated
+        Serial.println("ALERT: Physical obstacle boundary breached.");
+        return; // Exit immediately to prevent Pi commands from overriding safety
     }
-    
-    // 2. If the path is clear, follow the Raspberry Pi instructions
-    // (This code will run once we actually have the Pi sending data)
-    /*
-    if (robotData.stopSignDetected) {
-        AppMotor.DeviceDriverSet_Motor_control(direction_void, 0, direction_void, 0, false);
-    } else {
-        // Drive forward using the Pi's steering angle
-        AppMotor.DeviceDriverSet_Motor_control(direction_just, CRUISE_SPEED, direction_just, CRUISE_SPEED, true);
+
+    // PRIORITY 3: Navigation and Lane Tracking
+    if (robotData.targetSteeringAngle < -10) {
+        // Steer Left
+        rotateRightDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic)
+        robotData.targetSteeringAngle = 0; // Reset after steering
+       // motor.rotateLeftRaw(100); // Updated
+    } 
+    else if (robotData.targetSteeringAngle > 10) {
+        // Steer Right
+        rotateLeftDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic)
+        robotData.targetSteeringAngle = 0; // Reset after steering
+       // motor.rotateRightRaw(100); // Updated
+    } 
+    else {
+        motor.moveForward(CRUISE_SPEED,durationMs); // Updated
     }
-    */
 }
 
 // ==========================================
@@ -88,23 +142,23 @@ void Navigation() {
 
 void setup() {
     Serial.begin(115200);
-    AppMotor.DeviceDriverSet_Motor_Init();
-    AppULTRASONIC.DeviceDriverSet_ULTRASONIC_Init();
-   // AppServo.DeviceDriverSet_Servo_Init(90); 
+    // Initialize all hardware securely using the new names
+    motor.initMotors();
+    ultrasonic.initUltrasonic();
+    gyro.initGyro();
     
-    // Set default safe values in the mailbox
+    // Set default safe values
     robotData.obstacleDetected = false;
     robotData.targetSteeringAngle = 0;
     robotData.stopSignDetected = false;
     
-    Serial.println("System Boot: Ready.");
+    Serial.println("R.O.A.M. B.A. System Boot: Online and ready.");
 }
 
 void loop() {
     // The main loop is now just a clean, easy to read checklist.
     // It gathers all data first, then makes a decision.
-    
     updateUltrasonicData();
-    updateRaspberryPiData();
+    //updateRaspberryPiData();
     Navigation();
 }
