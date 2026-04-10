@@ -40,43 +40,12 @@ int durationMs = 1000; // Default duration for forward/backward commands
 
 unsigned long lastSonarTime = 0;
 unsigned long lastPiTime = 0;
+const uint8_t SONAR_INTERVAL = 100;
 
+bool debugMode = true; // TESTING WITHOUT PI
 // ==========================================
 // 2. DATA COLLECTION FUNCTIONS
 // ==========================================
-
-void serialEvent() {
-    while (Serial.available()) {
-        char c = (char)Serial.read();
-        if (c == '\n') {
-            stringComplete = true;
-            return;
-        }
-        inputString += c;
-    }
-}
-
-void processCommand(String cmd) {
-    cmd.trim();
-    if (cmd.length() == 0) return;
-
-    Serial.print("CMD: ");
-    Serial.println(cmd);
-
-    if (cmd.indexOf(':') != -1) {
-        char action = cmd.charAt(0);
-        float value = cmd.substring(2).toFloat();
-
-        switch (action) {
-            case 'L': rotateLeftDegrees(value); break;
-            case 'R': rotateRightDegrees(value); break;
-            case 'F': forwardUntilBlocked(speedCar, (unsigned long)value); break;
-            case 'B': reverseUntilBlocked(speedCar, (unsigned long)value); break;
-        }
-    } else {
-        if (cmd == "S") stopMotors();
-    }
-}
 
 void updateUltrasonicData() {
     // Only check the sensor every 50 milliseconds
@@ -100,7 +69,7 @@ if (Serial.available() > 0) {
                 case 'L': robotData.targetSteeringAngle = -value; break; // Left is negative
                 case 'R': robotData.targetSteeringAngle = value; break;  // Right is positive
                 case 'S': robotData.stopSignDetected = (value > 0); break;
-            }
+            } //"L:30" means turn left 30 degrees, "R:15" means turn right 15 degrees, Wont move unless angle is larger then absolute value of 10 degrees
         }
     }
 }
@@ -114,20 +83,19 @@ void Navigation() {
     if (robotData.obstacleDetected) {
         motor.moveBackward(CRUISE_SPEED,durationMs);
         motor.stopMotors(); // Updated
-        Serial.println("ALERT: Physical obstacle boundary breached.");
         return; // Exit immediately to prevent Pi commands from overriding safety
     }
 
     // PRIORITY 3: Navigation and Lane Tracking
     if (robotData.targetSteeringAngle < -10) {
         // Steer Left
-        rotateRightDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic)
+        rotateLeftDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
         robotData.targetSteeringAngle = 0; // Reset after steering
        // motor.rotateLeftRaw(100); // Updated
     } 
     else if (robotData.targetSteeringAngle > 10) {
         // Steer Right
-        rotateLeftDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic)
+        rotateRightDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
         robotData.targetSteeringAngle = 0; // Reset after steering
        // motor.rotateRightRaw(100); // Updated
     } 
@@ -135,7 +103,32 @@ void Navigation() {
         motor.moveForward(CRUISE_SPEED,durationMs); // Updated
     }
 }
-
+void simulateDebugCommands() {
+    // Only change the command every 2000 milliseconds (2 seconds)
+    if (millis() - lastDebugTime > 2000) {
+        lastDebugTime = millis();
+        
+        // Cycle to the next step in the sequence
+        debugSequence++;
+        if (debugSequence > 3) {
+            debugSequence = 0; // Loop back to the start
+        }
+        switch(debugSequence) {
+            case 0:
+                robotData.targetSteeringAngle = 0;
+                break;
+            case 1:
+                robotData.targetSteeringAngle = -30;
+                break;
+            case 2:
+                robotData.targetSteeringAngle = 0;
+                break;
+            case 3:
+                robotData.targetSteeringAngle = 30;
+                break;
+        }
+    }
+}
 // ==========================================
 // 4. MAIN EXECUTABLE
 // ==========================================
@@ -156,9 +149,17 @@ void setup() {
 }
 
 void loop() {
-    // The main loop is now just a clean, easy to read checklist.
-    // It gathers all data first, then makes a decision.
-    updateUltrasonicData();
-    //updateRaspberryPiData();
-    Navigation();
+  
+    updateUltrasonicData(); 
+
+    // 2. Decide where our steering instructions are coming from
+    if (debugMode) {
+        // Run our ghost Pi simulator
+        simulateDebugCommands(); 
+    } else {
+        // Listen to the real Pi over the USB cable
+        updateRaspberryPiData(); 
+    }
+
+    Navigation(); 
 }
