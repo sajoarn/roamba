@@ -7,18 +7,12 @@
 #include "Ultrasonic.h"
 #include "Gyro.h"
 #include "Rotation.h"
-
+#include "ServoController.h"
 
 MotorController motor;
 Ultrasonic ultrasonic;
 Gyro gyro;
-//DeviceDriverSet_Servo AppServo;
-
-// ==========================================
-// 1. THE CENTRAL MAILBOX (Global Data)
-// ==========================================
-// This structure holds ALL the data your robot needs to make a decision.
-// To add new OpenCV data later, you just add a new variable right here.
+ServoController servo;
 
 struct VehicleData {
     // Ultrasonic Data
@@ -82,6 +76,7 @@ void Navigation() {
     if (robotData.obstacleDetected) {
         motor.moveBackward(CRUISE_SPEED,durationMs);
         motor.stopMotors(); // Updated
+        servo.surveySurroundings(); // Updated
         return; // Exit immediately to prevent Pi commands from overriding safety
     }
 
@@ -140,7 +135,7 @@ void setup() {
     motor.initMotors();
     ultrasonic.initUltrasonic();
     gyro.initGyro();
-    
+    servo.init();
     // Set default safe values
     robotData.obstacleDetected = false;
     robotData.targetSteeringAngle = 0;
