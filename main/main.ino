@@ -33,8 +33,8 @@ struct VehicleData {
 VehicleData robotData; // Create our mailbox
 
 // System configuration
-const uint16_t CRITICAL_DISTANCE_CM = 20; 
-const uint8_t CRUISE_SPEED = 150;
+const uint16_t CRITICAL_DISTANCE_CM = 25; 
+const uint8_t CRUISE_SPEED = 100;
 int durationMs = 1000; // Default duration for forward/backward commands
 
 unsigned long lastSonarTime = 0;
@@ -119,13 +119,13 @@ void simulateDebugCommands() {
                 robotData.targetSteeringAngle = 0;
                 break;
             case 1:
-                robotData.targetSteeringAngle = -30;
+                robotData.targetSteeringAngle = -45;
                 break;
             case 2:
                 robotData.targetSteeringAngle = 0;
                 break;
             case 3:
-                robotData.targetSteeringAngle = 30;
+                robotData.targetSteeringAngle = 45;
                 break;
         }
     }
