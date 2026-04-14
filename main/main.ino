@@ -18,6 +18,8 @@ struct VehicleData {
     // Ultrasonic Data
     uint16_t frontDistance;
     bool obstacleDetected;
+
+    uint8_t speed = 0;
     
     // Future Raspberry Pi OpenCV Data
     int targetSteeringAngle; 
@@ -28,14 +30,13 @@ VehicleData robotData; // Create our mailbox
 
 // System configuration
 const uint16_t CRITICAL_DISTANCE_CM = 25; 
-const uint8_t CRUISE_SPEED = 100;
 int durationMs = 1000; // Default duration for forward/backward commands
 
 unsigned long lastSonarTime = 0;
 unsigned long lastPiTime = 0;
 const uint8_t SONAR_INTERVAL = 100;
 
-bool debugMode = true; // TESTING WITHOUT PI
+bool debugMode = false; // TESTING WITHOUT PI
 // ==========================================
 // 2. DATA COLLECTION FUNCTIONS
 // ==========================================
@@ -50,7 +51,7 @@ void updateUltrasonicData() {
 }
 
 void updateRaspberryPiData() {
-if (Serial.available() > 0) {
+    if (Serial.available() > 0) {
         String incomingData = Serial.readStringUntil('\n');
         incomingData.trim();
         if (incomingData.length() == 0) return;
@@ -61,7 +62,14 @@ if (Serial.available() > 0) {
             switch (action) {
                 case 'L': robotData.targetSteeringAngle = -value; break; // Left is negative
                 case 'R': robotData.targetSteeringAngle = value; break;  // Right is positive
-                case 'S': robotData.stopSignDetected = (value > 0); break;
+                case 'G': 
+                    robotData.targetSteeringAngle = 0; 
+                    robotData.speed = 100;
+                    break; // General steering command
+                case 'S': 
+                    robotData.targetSteeringAngle = 0; 
+                    robotData.speed = 0;
+                    break;
             } //"L:30" means turn left 30 degrees, "R:15" means turn right 15 degrees, Wont move unless angle is larger then absolute value of 10 degrees
         }
     }
@@ -74,7 +82,7 @@ if (Serial.available() > 0) {
 void Navigation() {
 
     if (robotData.obstacleDetected) {
-        motor.moveBackward(CRUISE_SPEED,durationMs);
+        motor.moveBackward(robotData.speed,durationMs);
         motor.stopMotors(); // Updated
         servo.surveySurroundings(); // Updated
         return; // Exit immediately to prevent Pi commands from overriding safety
@@ -94,7 +102,7 @@ void Navigation() {
        // motor.rotateRightRaw(100); // Updated
     } 
     else {
-        motor.moveForward(CRUISE_SPEED,durationMs); // Updated
+        motor.moveForward(robotData.speed,durationMs); // Updated
     }
 }
 unsigned long lastDebugTime = 0;
