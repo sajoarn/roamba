@@ -1,34 +1,94 @@
-from MotorModule import Motor
+#from MotorModule import Motor
 from LaneDetectionModule import getLaneCurve
 import WebcamModule
 import serial
+import subprocess
+import platform
+import time
 
-##################################################
-#motor = Motor(2,3,4,17,22,27) ##likely need to replace this with serial connection: Motor('/dev/ttyUSB0', 9600)
-##################################################
-arduino = serial.Serial(port='COM3', baudrate=115200, timeout=1); # Establish connection to Arduino
-def main():
- 
-    img = WebcamModule.getImg()
-    curveVal= getLaneCurve(img,1)
- 
-    sen = 1.3  # SENSITIVITY
-    maxVAl= 0.3 # MAX SPEED
-    if curveVal>maxVAl:curveVal = maxVAl
-    if curveVal<-maxVAl: curveVal =-maxVAl
-    #print(curveVal)
-    if curveVal>0:
-        sen =1.7
-        cmd = "R"
-        if curveVal<0.05: curveVal=0
+def connect_to_wifi(ssid, password=None):
+    current_os = platform.system()
+    print(f"Detected OS: {current_os}. Attempting to connect to {ssid}...")
+    connection_successful=False;
+    if current_os == "Windows":
+        # WINDOWS CONNECTION
+        try:
+            # The command: netsh wlan connect name="SSID"
+            cmd = f'netsh wlan connect name="{ssid}"'
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            
+            if "completed successfully" in result.stdout:
+                print(f"Windows: Command sent to connect to {ssid}.")
+                connection_successful = True
+            else:
+                print(f"Windows: Warning - {result.stdout.strip()}")
+                
+        except Exception as e:
+            print(f"Windows Error: {e}")
+
+    elif current_os == "Linux":
+        # LINUX / RASPBERRY PI CONNECTION
+        # Linux is much better at this. We use the 'nmcli' (NetworkManager) command.
+        try:
+            cmd = ["nmcli", "device", "wifi", "connect", ssid]
+            if password:
+                cmd.extend(["password", password])
+                
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                print(f"Linux: Successfully connected to {ssid}.")
+                connection_successful = True
+            else:
+                print(f"Linux Error: {result.stderr.strip()}")
+                
+        except Exception as e:
+            print(f"Linux Error: {e}")
+            
     else:
-        cmd = "L"
-        if curveVal>-0.08: curveVal=0
-    arduino.write(f"{cmd}{abs(curveVal):.2f}\n".encode('utf-8'))  # Send command to Arduino
-    #motor.move(0.20,-curveVal*sen,0.05)
-    #cv2.waitKey(1)
-     
+        print(f"Unsupported Operating System: {current_os}")
 
-if __name__ == '__main__':
+    print("Waiting 5 seconds for network IP assignment...")
+    time.sleep(5)
+    print("Ready to connect to camera stream!")
+
+    return connection_successful
+
+ROBOT_WIFI_NAME = "ELEGOO-D4224BBA2010";
+
+def main():
+
+    connection_made = connect_to_wifi(ROBOT_WIFI_NAME) # Connect to WiFi before starting the main loop
+    if not connection_made:
+        print("Failed to connect to WiFi.")
+        return
+    
+    arduino = serial.Serial(port='COM5', baudrate=115200, timeout=1); # Establish connection to Arduino
+    time.sleep(2) # Wait for the connection to initialize
+    webcam = WebcamModule.Webcam() # Initialize webcam module
+
+    arduino.write(f"G:0\n".encode('utf-8')) # car starts
+    print('Robot Go\n')
     while True:
-        main()
+        print('Lane detection\n')
+        img = webcam.getImg()
+        curveVal= getLaneCurve(img,1)
+    
+        sen = 1.3  # SENSITIVITY
+        maxVAl= 0.3 # MAX SPEED
+        if curveVal>maxVAl:curveVal = maxVAl
+        if curveVal<-maxVAl: curveVal =-maxVAl
+        #print(curveVal)
+        if curveVal>0:
+            sen =1.7
+            cmd = "R"
+            if curveVal<0.05: curveVal=0
+        else:
+            cmd = "L"
+            if curveVal>-0.08: curveVal=0
+        sendCommand = f"{cmd}:{abs(curveVal):.2f}\n"
+        print(sendCommand)
+        arduino.write(sendCommand.encode('utf-8'))  # Send command to Arduino
+     
+if __name__ == '__main__':
+    main()

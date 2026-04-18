@@ -61,9 +61,9 @@ def getLaneCurve(img, display=2): #0=no display, 1=display result, 2=display com
     #normalization of values
     curve=curve/100
     if curve>1:
-        curve==1
+        curve=1
     if curve<-1:
-        curve==-1    
+        curve=-1    
     # cv2.imshow('Thres', imgThres) ##grayscale of the lane
     # cv2.imshow('Warp', imgWarp) ##"birds eye" view of the lane
     # cv2.imshow('Warp Points', imgWarpPoints) #adding dots to the image to tell
