@@ -55,7 +55,7 @@ def connect_to_wifi(ssid, password=None):
     return connection_successful
 
 ROBOT_WIFI_NAME = "ELEGOO-D4224BBA2010";
-
+debug_mode = True # Set to True to use local video file instead of camera stream for testing
 def main():
 
     connection_made = connect_to_wifi(ROBOT_WIFI_NAME) # Connect to WiFi before starting the main loop
@@ -65,28 +65,34 @@ def main():
     
     arduino = serial.Serial(port='COM5', baudrate=115200, timeout=1); # Establish connection to Arduino
     time.sleep(2) # Wait for the connection to initialize
-    webcam = WebcamModule.Webcam() # Initialize webcam module
+    webcam = WebcamModule.Webcam(debug=debug_mode) # Initialize webcam module
 
     arduino.write(f"G:0\n".encode('utf-8')) # car starts
     print('Robot Go\n')
     while True:
         print('Lane detection\n')
         img = webcam.getImg()
-        curveVal= getLaneCurve(img,1)
-    
+        curvePixel= getLaneCurve(img,1) # curve in pixels, the higher the value the sharper the turn. Negative is left, positive is right
+        curveDegrees = curvePixel * 0.1375
+
         sen = 1.3  # SENSITIVITY
-        maxVAl= 0.3 # MAX SPEED
-        if curveVal>maxVAl:curveVal = maxVAl
-        if curveVal<-maxVAl: curveVal =-maxVAl
+        maxVAl= 0.5 # MAX SPEED
+
+        turnVal = abs(curveDegrees) * sen
+
+        if turnVal>maxVAl:
+            turnVal = maxVAl
+
         #print(curveVal)
-        if curveVal>0:
-            sen =1.7
+        if curveDegrees > 0.5:  
             cmd = "R"
-            if curveVal<0.05: curveVal=0
-        else:
+        elif curveDegrees < -0.5:
             cmd = "L"
-            if curveVal>-0.08: curveVal=0
-        sendCommand = f"{cmd}:{abs(curveVal):.2f}\n"
+        else:
+            cmd = "G"
+            turnVal = 0
+
+        sendCommand = f"{cmd}:{abs(turnVal):.2f}\n"
         print(sendCommand)
         arduino.write(sendCommand.encode('utf-8'))  # Send command to Arduino
      

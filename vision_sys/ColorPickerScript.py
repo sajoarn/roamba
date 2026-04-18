@@ -3,7 +3,8 @@ import numpy as np
  
 frameWidth = 640
 frameHeight = 480
-cap = cv2.VideoCapture(1)
+cameraSource = 'vid1.mp4';
+cap = cv2.VideoCapture(cameraSource)
 cap.set(3, frameWidth)
 cap.set(4, frameHeight)
  
@@ -20,7 +21,7 @@ cv2.createTrackbar("SAT Max", "HSV", 255, 255, empty)
 cv2.createTrackbar("VALUE Min", "HSV", 0, 255, empty)
 cv2.createTrackbar("VALUE Max", "HSV", 255, 255, empty)
  
-cap = cv2.VideoCapture(r"C:\Users\hussa\Documents\school\vid1.mp4") ##add the file path of the video here or replace with 0 for the camera
+cap = cv2.VideoCapture(cameraSource) ##add the file path of the video here or replace with 0 for the camera
 frameCounter = 0
  
 while True:

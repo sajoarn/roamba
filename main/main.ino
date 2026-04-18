@@ -89,13 +89,13 @@ void Navigation() {
     }
 
     // PRIORITY 3: Navigation and Lane Tracking
-    if (robotData.targetSteeringAngle < -10) {
+    if (robotData.targetSteeringAngle < 0) {
         // Steer Left
         rotateLeftDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
         robotData.targetSteeringAngle = 0; // Reset after steering
        // motor.rotateLeftRaw(100); // Updated
     } 
-    else if (robotData.targetSteeringAngle > 10) {
+    else if (robotData.targetSteeringAngle > 0) {
         // Steer Right
         rotateRightDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
         robotData.targetSteeringAngle = 0; // Reset after steering
