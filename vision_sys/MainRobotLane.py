@@ -75,7 +75,7 @@ def main():
         curvePixel= getLaneCurve(img,1) # curve in pixels, the higher the value the sharper the turn. Negative is left, positive is right
         curveDegrees = curvePixel * 0.1375
 
-        sen = 1.3  # SENSITIVITY
+        sen = 0.05  # SENSITIVITY
         maxVAl= 0.5 # MAX SPEED
 
         turnVal = abs(curveDegrees) * sen
