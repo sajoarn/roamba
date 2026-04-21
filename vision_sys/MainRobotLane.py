@@ -1,4 +1,3 @@
-#from MotorModule import Motor
 from LaneDetectionModule import getLaneCurve
 import WebcamModule
 import serial
