@@ -59,17 +59,15 @@ def getLaneCurve(img, display=2): #0=no display, 1=display result, 2=display com
        cv2.imshow('Resutlt',imgResult)
 
     #normalization of values
-    curve=curve/100
-    if curve>1:
-        curve=1
-    if curve<-1:
-        curve=-1    
+    #curve=curve/100
+    #if curve>1:
+    #    curve=1
+    #if curve<-1:
+    #    curve=-1    
     # cv2.imshow('Thres', imgThres) ##grayscale of the lane
     # cv2.imshow('Warp', imgWarp) ##"birds eye" view of the lane
     # cv2.imshow('Warp Points', imgWarpPoints) #adding dots to the image to tell
     # cv2.imshow('Histogram', imgHist)   #display histogram
-
-
     return curve
 
 
@@ -79,7 +77,7 @@ def getLaneCurve(img, display=2): #0=no display, 1=display result, 2=display com
 if __name__=='__main__':
 
     ##add the file path of the video here or replace with 0 for the camera
-    cap = cv2.VideoCapture(r"C:\Users\hussa\OneDrive\Desktop\Personal\Grad School\Purdue\ECE 568-Embedded Systems\Project\vid1.mp4") 
+    cap = cv2.VideoCapture("test.jpeg") 
 
     #the next two lines is to help with cropping the video to find the lane from a "birds eye view"
     initialTrackBarVals=[102,80,20,214]

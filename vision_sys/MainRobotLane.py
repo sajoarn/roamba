@@ -73,7 +73,7 @@ def main():
         print('Lane detection\n')
         img = webcam.getImg()
         curvePixel= getLaneCurve(img,1) # curve in pixels, the higher the value the sharper the turn. Negative is left, positive is right
-        curveDegrees = curvePixel * 0.1375
+        curveDegrees = curvePixel * 0.1375 # 100 pixels should equal 13.75
 
         sen = 1.3  # SENSITIVITY
         maxVAl= 0.5 # MAX SPEED
