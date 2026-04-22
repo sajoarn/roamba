@@ -53,8 +53,8 @@ def connect_to_wifi(ssid, password=None):
 
     return connection_successful
 
-ROBOT_WIFI_NAME = "ELEGOO-D4224BBA2010";
-debug_mode = True # Set to True to use local video file instead of camera stream for testing
+ROBOT_WIFI_NAME = "ELEGOO-B89958BA2010";
+debug_mode = False # Set to True to use local video file instead of camera stream for testing
 def main():
 
     connection_made = connect_to_wifi(ROBOT_WIFI_NAME) # Connect to WiFi before starting the main loop
@@ -62,14 +62,14 @@ def main():
         print("Failed to connect to WiFi.")
         return
     
-    arduino = serial.Serial(port='COM5', baudrate=115200, timeout=1); # Establish connection to Arduino
+    arduino = serial.Serial(port='/dev/ttyUSB0', baudrate=115200, timeout=1); # Establish connection to Arduino
     time.sleep(2) # Wait for the connection to initialize
     webcam = WebcamModule.Webcam(debug=debug_mode) # Initialize webcam module
 
     arduino.write(f"G:0\n".encode('utf-8')) # car starts
-    print('Robot Go\n')
+    #print('Robot Go\n')
     while True:
-        print('Lane detection\n')
+        #print('Lane detection\n')
         img = webcam.getImg()
         curvePixel= getLaneCurve(img,1) # curve in pixels, the higher the value the sharper the turn. Negative is left, positive is right
         curveDegrees = curvePixel * 0.1375 # 100 pixels should equal 13.75
@@ -82,7 +82,7 @@ def main():
         if turnVal>maxVAl:
             turnVal = maxVAl
 
-        #print(curveVal)
+        
         if curveDegrees > 0.5:  
             cmd = "R"
         elif curveDegrees < -0.5:

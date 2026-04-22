@@ -6,6 +6,8 @@ curveList=[]
 avgVal=10
 
 def getLaneCurve(img, display=2): #0=no display, 1=display result, 2=display complete pipeline
+    
+    utlis.initializeTrackbars([102,80,20,214])
 
     imgCopy=img.copy()
     imgResult=img.copy()

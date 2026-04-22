@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib
 
-cap = cv2.VideoCapture(r"C:\Users\hussa\Documents\school\vid1.mp4") ##add the file path of the video here or replace with 0 for the camera
+cap = cv2.VideoCapture(r"./vid1.mp4") ##add the file path of the video here or replace with 0 for the camera
 
 if not cap.isOpened():
     raise IOError("Can't open video capture")
