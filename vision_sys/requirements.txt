@@ -1,5 +1,5 @@
-opencv-python==4.12.0.88
-numpy<2.3
+opencv-python==4.13.0.92
+numpy==2.4.4
 matplotlib==3.10.8
 RPi.GPIO==0.7.1
 pyserial==3.5
