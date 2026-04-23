@@ -9,7 +9,8 @@ def getLaneCurve(img, display=2): #0=no display, 1=display result, 2=display com
 
     imgCopy=img.copy()
     imgResult=img.copy()
-
+    initialTrackBarVals=[102,80,20,214]
+    utlis.initializeTrackbars(initialTrackBarVals)
     ##STEP1 to find the lane
     imgThres= utlis.thresholding(img)
 
@@ -77,7 +78,7 @@ def getLaneCurve(img, display=2): #0=no display, 1=display result, 2=display com
 if __name__=='__main__':
 
     ##add the file path of the video here or replace with 0 for the camera
-    cap = cv2.VideoCapture("test.jpeg") 
+    cap = cv2.VideoCapture("vid1.mp4") 
 
     #the next two lines is to help with cropping the video to find the lane from a "birds eye view"
     initialTrackBarVals=[102,80,20,214]
