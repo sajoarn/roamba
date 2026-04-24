@@ -6,8 +6,8 @@ def thresholding(img):
     imgHsv=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
 
     #use the color picker script to find the rgb values for the two below
-    lowerWhite=np.array([60,0,0])
-    upperWhite=np.array([255,160,255])
+    lowerWhite = np.array([52, 0, 141])
+    upperWhite = np.array([131, 35, 255])
     maskWhite= cv2.inRange(imgHsv, lowerWhite,upperWhite)   
 
     return maskWhite

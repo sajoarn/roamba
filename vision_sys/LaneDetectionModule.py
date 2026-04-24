@@ -9,7 +9,7 @@ def getLaneCurve(img, display=2): #0=no display, 1=display result, 2=display com
 
     imgCopy=img.copy()
     imgResult=img.copy()
-    initialTrackBarVals=[102,80,20,214]
+    initialTrackBarVals=[57,185,10,285]
     utlis.initializeTrackbars(initialTrackBarVals)
     ##STEP1 to find the lane
     imgThres= utlis.thresholding(img)
