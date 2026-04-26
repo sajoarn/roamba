@@ -139,6 +139,19 @@ Set `debug_mode = True` in `MainRobotLane.py` to use local video files instead o
 - **Camera Issues**: Verify camera is properly connected and configured
 - **Lane Detection**: Adjust sensitivity values in vision code for different lighting conditions
 
+### QT Font Errors
+- The latest version of OpenCV for Python does not include fonts when installed via pip. -To manually copy over fonts:
+1. Run your venv activate script
+2. Find your venv path
+3. Create a folder in your OpenCV site package to hold the fonts:
+```sh
+mkdir /home/$USER_NAME/$ROAMBA_REPO_PATH/.venv/lib/python3.13/site-packages/cv2/qt/fonts
+```
+4. Copy over the fonts to this new directory:
+```sh
+cp /usr/share/fonts/truetype/dejavu/*.ttf /home/$USER_NAME/$ROAMBA_REPO_PATH/.venv/lib/python3.13/site-packages/cv2/qt/fonts
+```
+
 ## Future Enhancements
 
 - Camera-based obstacle detection (secondary goal) to complement ultrasonic sensing

@@ -1,38 +1,103 @@
+"""
+@file WebcamModule.py
+@brief Webcam/camera stream interface for robot vision system.
+@details Provides a wrapper class for OpenCV video capture that supports
+         both live camera streams via HTTP and local video files for testing.
+         Includes error handling and frame dropping recovery.
+"""
+
 import cv2
 import numpy as np
 
+# ============================================================================
+# Global Configuration Variables
+# ============================================================================
+
+## Default camera stream URL for ELEGOO robot
+DEFAULT_STREAM_URL = 'http://192.168.4.1:81/stream'
+
+## Default debug video file path for offline testing
+DEBUG_VIDEO_FILE = '../resources/vids/single_lane.mp4'
+
+## Default frame width
+DEFAULT_FRAME_WIDTH = 480
+
+## Default frame height
+DEFAULT_FRAME_HEIGHT = 240
+
+
 class Webcam:
-    def __init__(self, stream_url='http://192.168.4.1:81/stream',debug=False):
+    """
+    @class Webcam
+    @brief Interface for accessing camera stream or video file.
+    @details Wraps OpenCV VideoCapture for either live camera feeds via HTTP
+             or local video files for testing. Handles connection errors and
+             automatic frame rewinding in debug mode.
+    """
+
+    def __init__(self, stream_url=DEFAULT_STREAM_URL, debug=False):
+        """
+        @brief Initialize webcam/camera stream connection.
+        @details Attempts to open either a live camera stream or a debug video file.
+                 Prints connection status and warns if connection fails.
+        
+        @param stream_url (str) - HTTP URL for live camera stream (default: robot camera)
+        @param debug (bool) - If True, use local video file instead of camera stream
+        
+        @return None
+        """
         if debug:
-            self.cap = cv2.VideoCapture('vid1.mp4')
+            self.cap = cv2.VideoCapture(DEBUG_VIDEO_FILE)
             self.debug_mode = True
-            print("Debug mode enabled: Using local video file 'vid1.mp4' instead of camera stream.")
+            print(f"Debug mode enabled: Using local video file '{DEBUG_VIDEO_FILE}' instead of camera stream.")
         else:
             self.cap = cv2.VideoCapture(stream_url)
             self.debug_mode = False
+        
         if not self.cap.isOpened():
             print("\n[ERROR] OpenCV cannot open the camera URL.")
             print("Are you sure the PC is connected to the ELEGOO Wi-Fi?\n")
         else:
             print("Connection made to camera.\n")
         
-    def getImg(self, display=False, size=[480,240]):
+    def getImg(self, display=False, size=None):
+        """
+        @brief Retrieve and process a frame from camera/video stream.
+        @details Reads the next frame from the video source. If in debug mode
+                 and frame read fails, automatically rewinds video to start.
+                 Handles dropped frames gracefully by returning black image.
+        
+        @param display (bool) - If True, display frame in OpenCV window
+        @param size (list) - [width, height] for frame resizing
+                            (default: [480, 240])
+        
+        @return numpy.ndarray - Frame image in BGR format, resized to specified dimensions
+                                Returns black image if frame read fails
+        """
+        if size is None:
+            size = [DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT]
+        
         ret, img = self.cap.read()
 
+        # In debug mode, rewind video if frame read fails
         if self.debug_mode and not ret:
-            # Rewind the video back to frame 0
+            # Rewind to beginning of video
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             # Read the first frame again
             ret, img = self.cap.read()
 
+        # Handle frame drop by returning blank image
         if not ret or img is None:
             print("WARNING: Camera feed dropped a frame! Waiting for voltage to stabilize...")
-            # Return a blank black image so cv2.resize doesn't explode
+            # Return blank black image to prevent errors in downstream processing
             return np.zeros((size[1], size[0], 3), dtype=np.uint8)
 
+        # Resize frame to target dimensions
         img = cv2.resize(img, (size[0], size[1]))
 
+        # Display frame if requested
         if display:
             cv2.imshow("IMG", img)
             cv2.waitKey(1)
+        
         return img

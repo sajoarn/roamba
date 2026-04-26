@@ -1,4 +1,5 @@
 #include "Ultrasonic.h"
+#include "Utils.h"
 
 // Empty constructor because pins are set in the header
 Ultrasonic::Ultrasonic() {
@@ -27,8 +28,10 @@ long Ultrasonic::readUltrasonicCm() {
 bool Ultrasonic::obstacleDetected() {
     long d = readUltrasonicCm();
     if (d != -1 && d <= 20) {
+        roambaPrintTime();
         Serial.print("Obstacle detected at ");
         Serial.print(d);
+        Serial.print("\r\n");
         return true;
     }
     return false;
