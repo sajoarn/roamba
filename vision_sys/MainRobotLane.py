@@ -69,20 +69,20 @@ def main():
     arduino.write(f"G:0\n".encode('utf-8')) # car starts
     #print('Robot Go\n')
     while True:
-        #print('Lane detection\n')
-        img = webcam.getImg()
-        curvePixel= getLaneCurve(img,1) # curve in pixels, the higher the value the sharper the turn. Negative is left, positive is right
-        curveDegrees = curvePixel * 0.1375 # 100 pixels should equal 13.75
+        print('Lane detection\n')
+        img = webcam.getImg(display=False)
+        curvePixel = getLaneCurve(img,display=0) # curve in pixels, the higher the value the sharper the turn. Negative is left, positive is right
+        curveDegrees = curvePixel # * 0.1375 # 100 pixels should equal 13.75
 
-        sen = 1.3  # SENSITIVITY
-        maxVAl= 0.5 # MAX SPEED
+        sen = 0.1  # SENSITIVITY
+        maxVAl= 10 # MAX SPEED
 
         turnVal = abs(curveDegrees) * sen
 
         if turnVal>maxVAl:
             turnVal = maxVAl
 
-        
+        print(f"Curve in degrees: {curveDegrees:.2f}")
         if curveDegrees > 0.5:  
             cmd = "R"
         elif curveDegrees < -0.5:
