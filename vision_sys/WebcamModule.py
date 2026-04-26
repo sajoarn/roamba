@@ -20,10 +20,10 @@ DEFAULT_STREAM_URL = 'http://192.168.4.1:81/stream'
 DEBUG_VIDEO_FILE = '../resources/vids/single_lane.mp4'
 
 ## Default frame width
-DEFAULT_FRAME_WIDTH = 480
+DEFAULT_FRAME_WIDTH = 800
 
 ## Default frame height
-DEFAULT_FRAME_HEIGHT = 240
+DEFAULT_FRAME_HEIGHT = 600
 
 
 class Webcam:
