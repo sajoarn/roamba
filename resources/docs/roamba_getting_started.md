@@ -60,9 +60,47 @@ export QT_QPA_PLATFORM=xcb
 
 8. Done! Test OpenCV was installed correctly by running the ColorPicker script:
 ```sh
-python ~/git_repos/roamba/vision_sys/ColorPickerScript.py
+cd ~/git_repos/roamba/vision_sys
+python ColorPickerScript.py
 ```
-    - This should pop up two windows with a test video and color sliders
+- This should pop up two windows with a test video and color sliders
+- NOTE: the ColorPickerScript.py has relative paths, and so must be run from the vision_sys directory
+
+## SSH Remote Session
+To run the robot remotely, you can ssh into the pi when connected to the Elegoo wifi:
+0. Power on your pi and the robot, so the camera Elegoo wifi is running and discoverable
+1. On your remote computer, open a command prompt or terminal and verify ssh is installed by running:
+```sh
+ssh
+```
+- If ssh is not installed, try a different terminal/command prompt program (like powershell), or install [open-ssh](https://www.openssh.org/)
+- You may need to create an ssh public key. Follow the github instructions on how to [create one](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+2. On your raspberry pi, connect to the Elegoo wifi, then find your IP address by running:
+```sh
+hostname -I
+```
+- For the purposes of these instructions, I will use `192.168.4.2`
+3. On your pi, identify your username (in the terminal, it should be in green text with the format: `myusername@raspberrypiname`)
+4. On your remote computer, connect to the Elegoo Wifi, then run ssh in command prompt or terminal:
+```sh
+ssh -X myusername@192.168.4.2
+```
+- type your raspberry pi account password when prompted. If you do not have a password, leave blank and hit 'enter'
+- You will be prompted to save the connection to known_hosts. Type 'y' to confirm.
+    - Side NOTE: known_hosts is a human-readable file on your remote computer at ~/.ssh/known_hosts. If you want to delete this ssh key later, edit the known_hosts file and delete the line corresponding to the IP address you connected to
+- NOTE: the `-X` command is needed to forward pop-up windows from the OpenCV qt windows to the client computer ssh session
+5. You're now remotely logged in to the pi! 
+6. Change directory to the location of your roamba repo, and run your python virtual environment:
+```sh
+cd ~/git_repos/roamba
+source ./.venv/bin/activate
+```
+7. Test out the webcam live stream by running MainRobotLane.py:
+```sh
+python ~/git_repos/roamba/vision_sys/MainRobotLane.py
+```
+- This should pop up a window with a color slider, a window with the live webcam feed, and should print a single line live-update of the curve degree output in the terminal
+8. Exit the ssh session by typing `exit` in the remote computer terminal
 
 ## Debug Web Server
 This puts out commands that can be read by ControlMain.ino
