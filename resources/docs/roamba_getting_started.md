@@ -26,31 +26,31 @@ The Robotic Observation and Autonomous Mobility Boundary Analyzer (R.O.A.M-B.A) 
 cd ~/git_repos/roamba
 python -m venv .venv
 ```
-    - you can check whether this succeeded by typing `ls -a` in the terminal. This should display all hidden directories, including a newly created `.venv` directory
+- you can check whether this succeeded by typing `ls -a` in the terminal. This should display all hidden directories, including a newly created `.venv` directory
 6. Run the python virtual environment (you will have to do this every time you connect to the pi):
 ```sh
 source ./.venv/bin/activate
 ```
-    - NOTE: there is no file extension on the activate script in Linux
-    - Side NOTE: Running virtual environments depends on the operating system. To run a virtual env scripts local to Windows, run: `./.venv/Scripts/activate.ps1` if in powershell or `./.venv/Scripts/activate.sh` if in git bash
+- NOTE: there is no file extension on the activate script in Linux
+- Side NOTE: Running virtual environments depends on the operating system. To run a virtual env scripts local to Windows, run: `./.venv/Scripts/activate.ps1` if in powershell or `./.venv/Scripts/activate.sh` if in git bash
 7. Change Directory down to the vision_sys folder, and install packages using pip:
 ```sh
 cd ~/git_repos/roamba/vision_sys
 pip install -r requirements.txt
 ```
-    - NOTE: Make sure the raspberry pi is connected to the internet, otherwise these installs will fail
+- NOTE: Make sure the raspberry pi is connected to the internet, otherwise these installs will fail
 8. OpenCV versions 4.13 and newer do not include fonts, so create a directory to hold them, then copy them over to the venv openCV package:
 ```sh
 mkdir ~/git_repos/roamba/.venv/lib/python3.13/site-packages/cv2/qt/fonts
 cp /usr/share/fonts/truetype/dejavu/*.ttf ~/git_repos/roamba/.venv/lib/python3.13/site-packages/cv2/qt/fonts
 ```
-    - NOTE: you can find your venv path information by running the venv environment (step 6), then running the `which python` command
+- NOTE: you can find your venv path information by running the venv environment (step 6), then running the `which python` command
 9. There is a bug where OpenCV will not be able to find qt plugin "wayland". To fix permanantly, run:
 ```sh
 echo 'export QT_QPA_PLATFORM=xcb' >> ~/.bashrc
 source ~/.bashrc
 ```
-    - You can verify this command worked by looking at the end of the bashrc file by running `tail ~/.bashrc`
+- You can verify this command worked by looking at the end of the bashrc file by running `tail ~/.bashrc`
 
 
 Or to fix temporarily (this setting does not persist between power cycles), run:
