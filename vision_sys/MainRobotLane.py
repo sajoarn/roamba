@@ -31,7 +31,7 @@ ARDUINO_BAUDRATE = 115200
 SENSITIVITY = 0.1
 
 ## Maximum speed value for motor control
-MAX_SPEED = 10
+MAX_SPEED = 1
 
 ## Scale factor to convert pixels to degrees (100 pixels = 13.75 degrees)
 CURVE_SCALE_FACTOR = 0.1375
@@ -124,7 +124,9 @@ def main():
     connection_made = connect_to_wifi(ROBOT_WIFI_NAME)
     if not connection_made:
         print("Failed to connect to WiFi.")
-        return
+        # FIXME: comment out return. Workaround to allow continue running since
+        # nmcli does not work running over ssh
+        # return
     
     # Establish connection to Arduino
     arduino = serial.Serial(port=ARDUINO_PORT, baudrate=ARDUINO_BAUDRATE, timeout=1)
@@ -132,40 +134,49 @@ def main():
     
     # Initialize webcam module
     webcam = WebcamModule.Webcam(debug=debug_mode)
+    
+    # Wait for user input to start the control loop
+    print("Ready to start autonomous navigation. Press Enter to begin...")
+    input()
 
     # Send start command to robot
     arduino.write(f"G:0\n".encode('utf-8'))
     
-    # Main control loop
-    while True:
-        # Get current frame from camera
-        img = webcam.getImg(display=True)
-        # Detect lane curve (in pixels)
-        # Negative = left turn, Positive = right turn
-        curve_pixel = getLaneCurve(img,display=0)
-        curve_degrees = curve_pixel * CURVE_SCALE_FACTOR # 100 pixels should equal 13.75
+    try:
+        # Main control loop
+        while True:
+            # Get current frame from camera
+            img = webcam.getImg(display=True)
+            # Detect lane curve (in pixels)
+            # Negative = left turn, Positive = right turn
+            curve_pixel = getLaneCurve(img,display=0)
+            curve_degrees = curve_pixel * CURVE_SCALE_FACTOR # 100 pixels should equal 13.75
 
-        # Calculate turn value with sensitivity
-        turn_val = abs(curve_degrees) * SENSITIVITY
+            # Calculate turn value with sensitivity
+            turn_val = abs(curve_degrees) * SENSITIVITY
 
-        # Limit turn value to maximum speed
-        if turn_val > MAX_SPEED:
-            turn_val = MAX_SPEED
+            # Limit turn value to maximum speed
+            if turn_val > MAX_SPEED:
+                turn_val = MAX_SPEED
 
-        if curve_degrees > CURVE_THRESHOLD:  
-            cmd = "R" # Right turn
-        elif curve_degrees < -CURVE_THRESHOLD:
-            cmd = "L"  # Left turn
-        else:
-            cmd = "G"  # Go straight
-            turn_val = 0
+            if curve_degrees > CURVE_THRESHOLD:  
+                cmd = "R" # Right turn
+            elif curve_degrees < -CURVE_THRESHOLD:
+                cmd = "L"  # Left turn
+            else:
+                cmd = "G"  # Go straight
+                turn_val = 0
 
-        # Format and send command to Arduino
-        send_command = f"{cmd}:{abs(turn_val):.2f}\n"
-        arduino.write(send_command.encode('utf-8'))
+            # Format and send command to Arduino
+            send_command = f"{cmd}:{abs(turn_val):.2f}\n"
+            arduino.write(send_command.encode('utf-8'))
 
-        # Live update print in one line so terminal doesn't get filled with prints
-        print(f"Curve in degrees:\t{curve_degrees:.2f}\tCommand: {cmd}", end="\r")
-     
+            # Live update print in one line so terminal doesn't get filled with prints
+            print(f"Curve in degrees:\t{curve_degrees:.2f}\tCommand: {cmd}", end="\r")
+    except Exception as e:
+        # Stop the robot in case of exception or KeyboardInterrupt
+        arduino.write(f"s:0\n".encode('utf-8'))
+        raise e
+    
 if __name__ == '__main__':
     main()

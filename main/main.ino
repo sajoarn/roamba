@@ -17,11 +17,12 @@
  *  Defines
  ***********************************************/
 #define DEBUG_CMD_DURATION_MS 2000
-#define MOVEMENT_DURATION_MS 1000
+#define MOVEMENT_DURATION_MS 100
 #define SONAR_INTERVAL_MS 100
 #define SERIAL_BAUD 115200
+#define ROBOT_SPEED 100
 
-#define DEBUG_MODE // Comment out to disable Debug Mode
+// #define DEBUG_MODE // Comment out to disable Debug Mode
 
 /***********************************************
  *  Typedefs
@@ -74,7 +75,7 @@ void updateRaspberryPiData() {
                 case 'R': robotData.targetSteeringAngle = value; break;  // Right is positive
                 case 'G': 
                     robotData.targetSteeringAngle = 0; 
-                    robotData.speed = 100;
+                    robotData.speed = ROBOT_SPEED;
                     break; // General steering command
                 case 'S': 
                     robotData.targetSteeringAngle = 0; 
@@ -92,21 +93,23 @@ void updateRaspberryPiData() {
 void Navigation() {
 
     if (robotData.obstacleDetected) {
-        motor.moveBackward(robotData.speed, MOVEMENT_DURATION_MS);
+        // motor.moveBackward(robotData.speed, MOVEMENT_DURATION_MS);
         motor.stopMotors(); // Updated
-        servo.surveySurroundings(); // Updated
+        // servo.surveySurroundings(); // Updated
         return; // Exit immediately to prevent Pi commands from overriding safety
     }
 
     // PRIORITY 3: Navigation and Lane Tracking
     if (robotData.targetSteeringAngle < 0) {
         // Steer Left
-        rotateLeftDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
+        // rotateLeftDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
+        motor.rotateLeftRaw(ROBOT_SPEED);
         robotData.targetSteeringAngle = 0; // Reset after steering
     } 
     else if (robotData.targetSteeringAngle > 0) {
         // Steer Right
-        rotateRightDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
+        // rotateRightDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
+        motor.rotateRightRaw(ROBOT_SPEED);
         robotData.targetSteeringAngle = 0; // Reset after steering
     } 
     else {
