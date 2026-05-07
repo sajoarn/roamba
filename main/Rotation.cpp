@@ -14,6 +14,7 @@ void rotateLeftDegrees(float targetDeg, Gyro& gyro, MotorController& motors, Ult
         gyro.updateYaw();
         if (sensor.obstacleDetected()) {
             motors.stopMotors();
+            Serial.print("DONE");
             return;
         }
     }
@@ -36,6 +37,7 @@ void rotateRightDegrees(float targetDeg, Gyro& gyro, MotorController& motors, Ul
         gyro.updateYaw();
         if (sensor.obstacleDetected()) {
             motors.stopMotors();
+            Serial.print("DONE");
             return;
         }
     }

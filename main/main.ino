@@ -65,6 +65,7 @@ void updateRaspberryPiData() {
                 case 'G': 
                     robotData.targetSteeringAngle = 0; 
                     robotData.speed = 100;
+                    Serial.print("DONE");
                     break; // General steering command
                 case 'S': 
                     robotData.targetSteeringAngle = 0; 
