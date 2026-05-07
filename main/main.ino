@@ -1,24 +1,34 @@
+// Standard Libs
 #include <stdio.h>
 #include <string.h>
 
+// External Libs
 #include "Arduino.h"
-
-#include "MotorController.h"
 #include "Ultrasonic.h"
 #include "Gyro.h"
 #include "Rotation.h"
 #include "ServoController.h"
 
-MotorController motor;
-Ultrasonic ultrasonic;
-Gyro gyro;
-ServoController servo;
+// Custom Sources
+#include "MotorController.h"
+#include "Utils.h"
 
+/***********************************************
+ *  Defines
+ ***********************************************/
+#define DEBUG_CMD_DURATION_MS 2000
+#define MOVEMENT_DURATION_MS 1000
+#define SONAR_INTERVAL_MS 100
+#define SERIAL_BAUD 115200
+
+#define DEBUG_MODE // Comment out to disable Debug Mode
+
+/***********************************************
+ *  Typedefs
+ ***********************************************/
 struct VehicleData {
     // Ultrasonic Data
-    uint16_t frontDistance;
-    bool obstacleDetected;
-
+    bool obstacleDetected = false;
     uint8_t speed = 0;
     
     // Future Raspberry Pi OpenCV Data
@@ -26,25 +36,25 @@ struct VehicleData {
     bool stopSignDetected;   
 };
 
+/***********************************************
+ *  Singleton Instances
+ ***********************************************/
+MotorController motor;
+Ultrasonic ultrasonic;
+Gyro gyro;
+ServoController servo;
 VehicleData robotData; // Create our mailbox
 
-// System configuration
-const uint16_t CRITICAL_DISTANCE_CM = 25; 
-int durationMs = 1000; // Default duration for forward/backward commands
 
-unsigned long lastSonarTime = 0;
-unsigned long lastPiTime = 0;
-const uint8_t SONAR_INTERVAL = 100;
-
-bool debugMode = false; // TESTING WITHOUT PI
 // ==========================================
-// 2. DATA COLLECTION FUNCTIONS
+// DATA COLLECTION FUNCTIONS
 // ==========================================
 
 void updateUltrasonicData() {
-    // Only check the sensor every 50 milliseconds
-    if (millis() - lastSonarTime >= SONAR_INTERVAL) {
-        lastSonarTime = millis();
+    static unsigned long prevSonarTime = 0;
+    // Poll the sensor on a set frequency
+    if (millis() - prevSonarTime >= SONAR_INTERVAL_MS) {
+        prevSonarTime = millis();
         // Updated to use the new 'ultrasonic' name
         robotData.obstacleDetected = ultrasonic.obstacleDetected();
     }
@@ -77,13 +87,13 @@ void updateRaspberryPiData() {
 }
 
 // ==========================================
-// 3. VEHICLE DECISION LOGIC
+// VEHICLE DECISION LOGIC
 // ==========================================
 
 void Navigation() {
 
     if (robotData.obstacleDetected) {
-        motor.moveBackward(robotData.speed,durationMs);
+        motor.moveBackward(robotData.speed, MOVEMENT_DURATION_MS);
         motor.stopMotors(); // Updated
         servo.surveySurroundings(); // Updated
         return; // Exit immediately to prevent Pi commands from overriding safety
@@ -94,23 +104,23 @@ void Navigation() {
         // Steer Left
         rotateLeftDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
         robotData.targetSteeringAngle = 0; // Reset after steering
-       // motor.rotateLeftRaw(100); // Updated
     } 
     else if (robotData.targetSteeringAngle > 0) {
         // Steer Right
         rotateRightDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
         robotData.targetSteeringAngle = 0; // Reset after steering
-       // motor.rotateRightRaw(100); // Updated
     } 
     else {
-        motor.moveForward(robotData.speed,durationMs); // Updated
+        motor.moveForward(robotData.speed, MOVEMENT_DURATION_MS); // Updated
     }
 }
-unsigned long lastDebugTime = 0;
-int debugSequence = 0;
+
 void simulateDebugCommands() {
-    // Only change the command every 2000 milliseconds (2 seconds)
-    if (millis() - lastDebugTime > 2000) {
+    // Static so variables persist between function calls
+    static unsigned long lastDebugTime = 0;
+    static int debugSequence = 0;
+    // Only change the command every few seconds
+    if (millis() - lastDebugTime > DEBUG_CMD_DURATION_MS) {
         lastDebugTime = millis();
         
         // Cycle to the next step in the sequence
@@ -118,6 +128,10 @@ void simulateDebugCommands() {
         if (debugSequence > 3) {
             debugSequence = 0; // Loop back to the start
         }
+        roambaPrintTime();
+        Serial.print("Debug sequence ");
+        Serial.println(debugSequence);
+
         switch(debugSequence) {
             case 0:
                 robotData.targetSteeringAngle = 0;
@@ -135,11 +149,13 @@ void simulateDebugCommands() {
     }
 }
 // ==========================================
-// 4. MAIN EXECUTABLE
+// MAIN EXECUTABLE
 // ==========================================
 
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD);
+    roambaPrintTime();
+    Serial.println("Initializing...");
     // Initialize all hardware securely using the new names
     motor.initMotors();
     ultrasonic.initUltrasonic();
@@ -150,21 +166,21 @@ void setup() {
     robotData.targetSteeringAngle = 0;
     robotData.stopSignDetected = false;
     
+    roambaPrintTime();
     Serial.println("R.O.A.M. B.A. System Boot: Online and ready.");
 }
 
 void loop() {
-  
+    // 1. Get Sensor Data
     updateUltrasonicData(); 
 
     // 2. Decide where our steering instructions are coming from
-    if (debugMode) {
-        // Run our ghost Pi simulator
-        simulateDebugCommands(); 
-    } else {
-        // Listen to the real Pi over the USB cable
-        updateRaspberryPiData(); 
-    }
+#ifdef DEBUG_MODE
+    simulateDebugCommands(); 
+#else
+    updateRaspberryPiData(); 
+#endif
 
+    // 3. Act on steering commands
     Navigation(); 
 }

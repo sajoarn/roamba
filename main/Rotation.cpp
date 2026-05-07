@@ -1,8 +1,10 @@
 #include "Rotation.h"
+#include "Utils.h"
 
 void rotateLeftDegrees(float targetDeg, Gyro& gyro, MotorController& motors, Ultrasonic& sensor) {
     int speedCar = 100; // Local variable for this specific maneuver
     
+    roambaPrintTime();
     Serial.print("Rotating LEFT ");
     Serial.print(targetDeg);
     Serial.println(" degrees");
@@ -20,12 +22,14 @@ void rotateLeftDegrees(float targetDeg, Gyro& gyro, MotorController& motors, Ult
     }
 
     motors.stopMotors();
+    roambaPrintTime();
     Serial.println("Left rotation complete.");
 }
 
 void rotateRightDegrees(float targetDeg, Gyro& gyro, MotorController& motors, Ultrasonic& sensor) {
     int speedCar = 100;
-    
+
+    roambaPrintTime();
     Serial.print("Rotating RIGHT ");
     Serial.print(targetDeg);
     Serial.println(" degrees");
@@ -43,5 +47,6 @@ void rotateRightDegrees(float targetDeg, Gyro& gyro, MotorController& motors, Ul
     }
 
     motors.stopMotors();
+    roambaPrintTime();
     Serial.println("Right rotation complete.");
 }
