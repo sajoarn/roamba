@@ -19,8 +19,9 @@ class MotorController {
 
     void initMotors();
     void stopMotors();
-    void rotateLeftRaw(int speed);
-    void rotateRightRaw(int speed);
+    void rotateLeftRaw(int speed, int rate);
+    void rotateRightRaw(int speed, int rate);
+    void moveForwardRaw(int speed);
     void moveForward(int speed, unsigned long durationMs);
     void moveBackward(int speed, unsigned long durationMs);
 };

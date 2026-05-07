@@ -22,7 +22,7 @@ void rotateLeftDegrees(float targetDeg, Gyro& gyro, MotorController& motors, Ult
     Serial.print(targetDeg);
     Serial.println(" degrees");
 
-    motors.rotateLeftRaw(ROTATION_SPEED_LEFT);
+    motors.rotateLeftRaw(ROTATION_SPEED_LEFT, ROTATION_SPEED_LEFT);
     gyro.resetYaw();
 
     while (gyro.yaw < targetDeg) {
@@ -56,7 +56,7 @@ void rotateRightDegrees(float targetDeg, Gyro& gyro, MotorController& motors, Ul
     Serial.println(" degrees");
 
     gyro.resetYaw();
-    motors.rotateRightRaw(ROTATION_SPEED_RIGHT);
+    motors.rotateRightRaw(ROTATION_SPEED_RIGHT, ROTATION_SPEED_RIGHT);
 
     while (gyro.yaw > -targetDeg) {
         gyro.updateYaw();
