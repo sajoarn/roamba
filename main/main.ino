@@ -18,8 +18,12 @@
  ***********************************************/
 #define SONAR_INTERVAL_MS 100
 #define SERIAL_BAUD 115200
-#define ROBOT_SPEED 50
 #define SERIAL_TIMEOUT_MS 10
+#define ROBOT_FWD_SPEED 50
+#define SHALLOW_TURN_BASE_SPEED 30
+#define SHALLOW_TURN_FACTOR 80
+#define SHARP_TURN_BASE_SPEED 30
+#define SHARP_TURN_FACTOR 100
 
 /***********************************************
  *  Typedefs
@@ -42,6 +46,7 @@ Ultrasonic ultrasonic;
 Gyro gyro;
 ServoController servo;
 Directions_t steeringCmd; // Create our mailbox
+int count = 0;
 
 // ==========================================
 // DATA COLLECTION FUNCTIONS
@@ -87,6 +92,7 @@ void updateRaspberryPiData() {
                 break;
         }
     }
+    if (steeringCmd != NO_CMD) {count++;}
 }
 
 // ==========================================
@@ -96,29 +102,39 @@ void updateRaspberryPiData() {
 void Navigation() {
     switch (steeringCmd) {
         case LEFT:
-            motor.rotateLeftRaw(ROBOT_SPEED, ROBOT_SPEED);
+            motor.rotateLeftRaw(SHALLOW_TURN_BASE_SPEED, SHALLOW_TURN_FACTOR);
             roambaPrintTime();
-            Serial.println("Motors Left...");
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors Left...");
             break;
         case SHARP_LEFT:
-            motor.rotateLeftRaw(ROBOT_SPEED, ROBOT_SPEED * 2);
+            motor.rotateLeftRaw(SHARP_TURN_BASE_SPEED, SHARP_TURN_FACTOR);
             roambaPrintTime();
-            Serial.println("Motors Sharp Left...");
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors Sharp Left...");
             break;
         case RIGHT:
-            motor.rotateRightRaw(ROBOT_SPEED, ROBOT_SPEED);
+            motor.rotateRightRaw(SHALLOW_TURN_BASE_SPEED, SHALLOW_TURN_FACTOR);
             roambaPrintTime();
-            Serial.println("Motors Right...");
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors Right...");
             break;
         case SHARP_RIGHT:
-            motor.rotateRightRaw(ROBOT_SPEED, ROBOT_SPEED * 2);
+            motor.rotateRightRaw(SHARP_TURN_BASE_SPEED, SHARP_TURN_FACTOR);
             roambaPrintTime();
-            Serial.println("Motors Sharp Right...");
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors Sharp Right...");
             break;
         case FORWARD:
-            motor.moveForwardRaw(ROBOT_SPEED); // Updated
+            motor.moveForwardRaw(ROBOT_FWD_SPEED); // Updated
             roambaPrintTime();
-            Serial.println("Motors forward...");
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors forward...");
             break;
         case STOP:
             motor.stopMotors();

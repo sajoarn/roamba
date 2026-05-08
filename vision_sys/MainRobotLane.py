@@ -6,7 +6,7 @@
          Arduino microcontroller via serial communication.
 """
 
-from LaneDetectionModule import getLaneCurve
+from LaneDetectionModule import getLaneCurve, initCompVision
 import WebcamModule
 import serial
 import subprocess
@@ -25,6 +25,7 @@ def log_worker():
     while True:
         message = _log_queue.get()
         if message is None:
+            _log_queue.task_done()
             break
         print(message, flush=True)
         _log_queue.task_done()
@@ -35,6 +36,13 @@ _log_thread.start()
 
 def log(message):
     _log_queue.put(message)
+
+
+def shutdown_logging(timeout=1.0):
+    """Flush any backlogged log messages and stop the log worker thread."""
+    _log_queue.put(None)
+    _log_queue.join()
+    _log_thread.join(timeout=timeout)
 
 # ============================================================================
 # Global Configuration Variables
@@ -60,8 +68,8 @@ NETWORK_INIT_DELAY = 5
 ARDUINO_INIT_DELAY = 2
 
 ## Curve threshold for determining turn direction (degrees)
-CURVE_THRESHOLD_LOW = 0.8
-CURVE_THRESHOLD_HIGH = 10
+CURVE_THRESHOLD_LOW = 0.1
+CURVE_THRESHOLD_HIGH = 2
 
 # ============================================================================
 # Function Definitions
@@ -140,6 +148,27 @@ def read_arduino_data(arduino):
             log(f"Arduino: {received_data}")
         time.sleep(0.01)  # Small delay to avoid high CPU usage
 
+def determine_curve(webcam):
+    """Determine the curve of the current frame"""
+    # Get current frame from camera
+    img = webcam.getImg(display=True)
+    # Detect lane curve (in pixels)
+    # Negative = left turn, Positive = right turn
+    curve_pixel = getLaneCurve(img,display=0)
+    curve_degrees = curve_pixel * CURVE_SCALE_FACTOR # 100 pixels should equal 13.75
+
+    if curve_degrees > CURVE_THRESHOLD_LOW and curve_degrees < CURVE_THRESHOLD_HIGH:  
+        cmd = "R" # Right turn
+    elif curve_degrees > CURVE_THRESHOLD_HIGH:
+        cmd = "C" # Sharp right turn clockwise
+    elif curve_degrees < -CURVE_THRESHOLD_LOW and curve_degrees > -CURVE_THRESHOLD_HIGH:
+        cmd = "L"  # Left turn
+    elif curve_degrees < -CURVE_THRESHOLD_HIGH:
+        cmd = "A" # Sharp left turn anti-clockwise
+    else:
+        cmd = "F"  # Go forward
+
+    return cmd, curve_degrees
 
 def main():
     """
@@ -168,12 +197,20 @@ def main():
     arduino_thread = threading.Thread(target=read_arduino_data, args=(arduino,))
     arduino_thread.start()
     
-    # Initialize webcam module
+    # Initialize webcam module and start Webcam thread
     webcam = WebcamModule.Webcam(debug=debug_mode)
+    webcam.start()
+
+    # Initialize Computer vision module
+    initCompVision()
+    determine_curve(webcam) # Pull up first frame
+
     
     # Wait for user input to start the control loop
     log("Ready to start autonomous navigation. Press Enter to begin...")
     input()
+    # Read webcam once to clear stale buffer
+    determine_curve(webcam)
 
     # Track runtime elapsed in seconds from main() start
     start_time = time.perf_counter()
@@ -181,26 +218,7 @@ def main():
     try:
         # Main control loop
         while True:
-            # Get current frame from camera
-            img = webcam.getImg(display=True)
-            # Detect lane curve (in pixels)
-            # Negative = left turn, Positive = right turn
-            curve_pixel = getLaneCurve(img,display=0)
-            curve_degrees = curve_pixel * CURVE_SCALE_FACTOR # 100 pixels should equal 13.75
-
-            # Calculate turn value with sensitivity
-            turn_val = abs(curve_degrees)
-
-            if curve_degrees > CURVE_THRESHOLD_LOW and curve_degrees < CURVE_THRESHOLD_HIGH:  
-                cmd = "R" # Right turn
-            elif curve_degrees > CURVE_THRESHOLD_HIGH:
-                cmd = "C" # Sharp right turn clockwise
-            elif curve_degrees < -CURVE_THRESHOLD_LOW and curve_degrees > -CURVE_THRESHOLD_HIGH:
-                cmd = "L"  # Left turn
-            elif curve_degrees < -CURVE_THRESHOLD_HIGH:
-                cmd = "A" # Sharp left turn anti-clockwise
-            else:
-                cmd = "F"  # Go forward
+            cmd, curve_degrees = determine_curve(webcam)
 
             # Format and send command to Arduino
             send_command = f"{cmd}\n"
@@ -223,8 +241,10 @@ def main():
             pass
         if arduino_thread is not None:
             arduino_thread.join(timeout=1.0)
-        _log_queue.put(None)
-        _log_thread.join(timeout=1.0)
+        # if webcam.thread is not None:
+        #     webcam.stop()
+        #     webcam.thread.join(timeout=1.0)
+        shutdown_logging(timeout=1.0)
     
 if __name__ == '__main__':
     main()
