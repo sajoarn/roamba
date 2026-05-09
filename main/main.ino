@@ -16,24 +16,26 @@
 /***********************************************
  *  Defines
  ***********************************************/
-#define DEBUG_CMD_DURATION_MS 2000
-#define MOVEMENT_DURATION_MS 1000
 #define SONAR_INTERVAL_MS 100
 #define SERIAL_BAUD 115200
-
-#define DEBUG_MODE // Comment out to disable Debug Mode
+#define SERIAL_TIMEOUT_MS 10
+#define ROBOT_FWD_SPEED 50
+#define SHALLOW_TURN_BASE_SPEED 30
+#define SHALLOW_TURN_FACTOR 80
+#define SHARP_TURN_BASE_SPEED 30
+#define SHARP_TURN_FACTOR 100
 
 /***********************************************
  *  Typedefs
  ***********************************************/
-struct VehicleData {
-    // Ultrasonic Data
-    bool obstacleDetected = false;
-    uint8_t speed = 0;
-    
-    // Future Raspberry Pi OpenCV Data
-    int targetSteeringAngle; 
-    bool stopSignDetected;   
+enum Directions_t {
+    LEFT,
+    SHARP_LEFT,
+    RIGHT,
+    SHARP_RIGHT,
+    FORWARD,
+    STOP,
+    NO_CMD
 };
 
 /***********************************************
@@ -43,47 +45,54 @@ MotorController motor;
 Ultrasonic ultrasonic;
 Gyro gyro;
 ServoController servo;
-VehicleData robotData; // Create our mailbox
-
+Directions_t steeringCmd; // Create our mailbox
+int count = 0;
 
 // ==========================================
 // DATA COLLECTION FUNCTIONS
 // ==========================================
 
 void updateUltrasonicData() {
-    static unsigned long prevSonarTime = 0;
     // Poll the sensor on a set frequency
-    if (millis() - prevSonarTime >= SONAR_INTERVAL_MS) {
-        prevSonarTime = millis();
-        // Updated to use the new 'ultrasonic' name
-        robotData.obstacleDetected = ultrasonic.obstacleDetected();
+    if (ultrasonic.obstacleDetected()) {
+        steeringCmd = STOP;
     }
 }
 
 void updateRaspberryPiData() {
-    if (Serial.available() > 0) {
-        String incomingData = Serial.readStringUntil('\n');
-        incomingData.trim();
-        if (incomingData.length() == 0) return;
-        if (incomingData.indexOf(':') != -1) {
-            char action = incomingData.charAt(0);
-            float value = incomingData.substring(2).toFloat();
-
-            switch (action) {
-                case 'L': robotData.targetSteeringAngle = -value; break; // Left is negative
-                case 'R': robotData.targetSteeringAngle = value; break;  // Right is positive
-                case 'G': 
-                    robotData.targetSteeringAngle = 0; 
-                    robotData.speed = 100;
-                    Serial.print("DONE");
-                    break; // General steering command
-                case 'S': 
-                    robotData.targetSteeringAngle = 0; 
-                    robotData.speed = 0;
-                    break;
-            } //"L:30" means turn left 30 degrees, "R:15" means turn right 15 degrees, Wont move unless angle is larger then absolute value of 10 degrees
+    String rxData;
+    char cmd;
+    while(Serial.available() > 0) {
+        // Flush out the serial RX buffer, and use last command
+        // (This is fragile! What if the buffer doesn't contain a newline?)
+        rxData = Serial.readStringUntil('\n');
+        cmd = rxData.charAt(0);
+        switch(cmd) {
+            case 'L': 
+                steeringCmd = LEFT;
+                break;
+            case 'A':
+                steeringCmd = SHARP_LEFT;
+                break;
+            case 'R':
+                steeringCmd = RIGHT;
+                break;
+            case 'C':
+                steeringCmd = SHARP_RIGHT;
+                break;
+            case 'F':
+                steeringCmd = FORWARD;
+                break;
+            case 'S':
+            // If command is invalid, stop movement
+                steeringCmd = STOP;
+                break;
+            default:
+                steeringCmd = NO_CMD;
+                break;
         }
     }
+    if (steeringCmd != NO_CMD) {count++;}
 }
 
 // ==========================================
@@ -91,69 +100,60 @@ void updateRaspberryPiData() {
 // ==========================================
 
 void Navigation() {
-
-    if (robotData.obstacleDetected) {
-        motor.moveBackward(robotData.speed, MOVEMENT_DURATION_MS);
-        motor.stopMotors(); // Updated
-        servo.surveySurroundings(); // Updated
-        return; // Exit immediately to prevent Pi commands from overriding safety
+    switch (steeringCmd) {
+        case LEFT:
+            motor.rotateLeftRaw(SHALLOW_TURN_BASE_SPEED, SHALLOW_TURN_FACTOR);
+            roambaPrintTime();
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors Left...");
+            break;
+        case SHARP_LEFT:
+            motor.rotateLeftRaw(SHARP_TURN_BASE_SPEED, SHARP_TURN_FACTOR);
+            roambaPrintTime();
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors Sharp Left...");
+            break;
+        case RIGHT:
+            motor.rotateRightRaw(SHALLOW_TURN_BASE_SPEED, SHALLOW_TURN_FACTOR);
+            roambaPrintTime();
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors Right...");
+            break;
+        case SHARP_RIGHT:
+            motor.rotateRightRaw(SHARP_TURN_BASE_SPEED, SHARP_TURN_FACTOR);
+            roambaPrintTime();
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors Sharp Right...");
+            break;
+        case FORWARD:
+            motor.moveForwardRaw(ROBOT_FWD_SPEED); // Updated
+            roambaPrintTime();
+            Serial.print("Count: ");
+            Serial.print(count);
+            Serial.println(" Motors forward...");
+            break;
+        case STOP:
+            motor.stopMotors();
+            break;
+        case NO_CMD:
+        default:
+            // Do nothing if no command
+            break;
     }
-
-    // PRIORITY 3: Navigation and Lane Tracking
-    if (robotData.targetSteeringAngle < 0) {
-        // Steer Left
-        rotateLeftDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
-        robotData.targetSteeringAngle = 0; // Reset after steering
-    } 
-    else if (robotData.targetSteeringAngle > 0) {
-        // Steer Right
-        rotateRightDegrees(robotData.targetSteeringAngle, gyro,  motor, ultrasonic); // blocking
-        robotData.targetSteeringAngle = 0; // Reset after steering
-    } 
-    else {
-        motor.moveForward(robotData.speed, MOVEMENT_DURATION_MS); // Updated
-    }
+    steeringCmd = NO_CMD;
 }
 
-void simulateDebugCommands() {
-    // Static so variables persist between function calls
-    static unsigned long lastDebugTime = 0;
-    static int debugSequence = 0;
-    // Only change the command every few seconds
-    if (millis() - lastDebugTime > DEBUG_CMD_DURATION_MS) {
-        lastDebugTime = millis();
-        
-        // Cycle to the next step in the sequence
-        debugSequence++;
-        if (debugSequence > 3) {
-            debugSequence = 0; // Loop back to the start
-        }
-        roambaPrintTime();
-        Serial.print("Debug sequence ");
-        Serial.println(debugSequence);
-
-        switch(debugSequence) {
-            case 0:
-                robotData.targetSteeringAngle = 0;
-                break;
-            case 1:
-                robotData.targetSteeringAngle = -45;
-                break;
-            case 2:
-                robotData.targetSteeringAngle = 0;
-                break;
-            case 3:
-                robotData.targetSteeringAngle = 45;
-                break;
-        }
-    }
-}
 // ==========================================
 // MAIN EXECUTABLE
 // ==========================================
 
 void setup() {
     Serial.begin(SERIAL_BAUD);
+    Serial.setTimeout(SERIAL_TIMEOUT_MS);
     roambaPrintTime();
     Serial.println("Initializing...");
     // Initialize all hardware securely using the new names
@@ -161,26 +161,21 @@ void setup() {
     ultrasonic.initUltrasonic();
     gyro.initGyro();
     servo.init();
-    // Set default safe values
-    robotData.obstacleDetected = false;
-    robotData.targetSteeringAngle = 0;
-    robotData.stopSignDetected = false;
+    steeringCmd = NO_CMD;
     
     roambaPrintTime();
     Serial.println("R.O.A.M. B.A. System Boot: Online and ready.");
 }
 
 void loop() {
-    // 1. Get Sensor Data
-    updateUltrasonicData(); 
-
-    // 2. Decide where our steering instructions are coming from
-#ifdef DEBUG_MODE
-    simulateDebugCommands(); 
-#else
+    // 1. Get any commands from serial
     updateRaspberryPiData(); 
-#endif
+
+    // 2. Get Sensor Data
+    // (This will override any serial command)
+    updateUltrasonicData(); 
 
     // 3. Act on steering commands
     Navigation(); 
+    Serial.flush(); // Empty out any outgoing serial prints
 }

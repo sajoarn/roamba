@@ -14,7 +14,7 @@ import utils
 # Global Configuration Variables
 # ============================================================================
 
-DEBUG_VIDEO_FILE = '../resources/vids/single_lane.mp4'
+DEBUG_VIDEO_FILE = '../resources/vids/webcam_lane.mp4'
 
 ## List to store raw curve values for smoothing via moving average
 curve_list = []
@@ -25,6 +25,12 @@ AVERAGE_WINDOW_SIZE = 10
 # ============================================================================
 # Function Definitions
 # ============================================================================
+
+def initCompVision():
+    # Initialize trackbars for perspective warping calibration
+    initialTrackBarVals = [81, 254, 44, 300]
+    # initialTrackBarVals = [102, 80, 20, 214]
+    utils.initializeTrackbars(initialTrackBarVals, 400, 300)
 
 def getLaneCurve(img, display=2):
     """
@@ -42,8 +48,6 @@ def getLaneCurve(img, display=2):
     @return int - Smoothed curve value in pixels
                  Negative = curve left, Positive = curve right
     """
-    utils.initializeTrackbars([102, 80, 20, 214])
-
     imgCopy = img.copy()
     imgResult = img.copy()
 
@@ -110,11 +114,8 @@ def getLaneCurve(img, display=2):
 if __name__ == '__main__':
     # Open video file or camera
     # Note: Replace "test.jpeg" with 0 for live camera feed
+    initCompVision()
     cap = cv2.VideoCapture(DEBUG_VIDEO_FILE)
-
-    # Initialize trackbars for perspective warping calibration
-    initialTrackBarVals = [102, 80, 20, 214]
-    utils.initializeTrackbars(initialTrackBarVals)
 
     frame_counter = 0
 
@@ -139,7 +140,8 @@ if __name__ == '__main__':
             break
 
         # Resize for faster processing
-        img = cv2.resize(img, dsize=(0, 0), fx=0.75, fy=0.5)
+        # img = cv2.resize(img, dsize=(0, 0), fx=0.75, fy=0.5)
+        img = cv2.resize(img, dsize=(400, 300))
 
         # Detect lane curve
         curve = getLaneCurve(img, display=2)

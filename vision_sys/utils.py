@@ -6,8 +6,10 @@ def thresholding(img):
     imgHsv=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
 
     #use the color picker script to find the rgb values for the two below
-    lowerWhite = np.array([52, 0, 141])
-    upperWhite = np.array([131, 35, 255])
+    # lowerWhite = np.array([50, 7, 132])
+    # upperWhite = np.array([107, 28, 255])
+    lowerWhite = np.array([52, 0, 48])
+    upperWhite = np.array([116, 64, 255])
     maskWhite= cv2.inRange(imgHsv, lowerWhite,upperWhite)   
 
     return maskWhite
@@ -44,7 +46,7 @@ def initializeTrackbars(intialTracbarVals,wT=480, hT=240):
     cv2.createTrackbar("Height Bottom", "Trackbars", intialTracbarVals[3], hT, nothing)
 
 #using for finding the overall borders of the track
-def valTrackbars(wT=480, hT=240):
+def valTrackbars(wT=400, hT=300):
     widthTop = cv2.getTrackbarPos("Width Top", "Trackbars")
     heightTop = cv2.getTrackbarPos("Height Top", "Trackbars")
     widthBottom = cv2.getTrackbarPos("Width Bottom", "Trackbars")

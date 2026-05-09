@@ -19,20 +19,27 @@ void MotorController::stopMotors() {
     analogWrite(PWMB, 0);
 }
 
-void MotorController::rotateLeftRaw(int speed) {
-    int speedRotation = speed + 100;
+void MotorController::rotateLeftRaw(int speed, int rate) {
+    int speedRotation = speed + rate;
     digitalWrite(A_IN, HIGH);
     digitalWrite(B_IN, HIGH);
     analogWrite(PWMA, speedRotation);
     analogWrite(PWMB, speed);
 }
 
-void MotorController::rotateRightRaw(int speed) {
-    int speedRotation = speed + 100;
+void MotorController::rotateRightRaw(int speed, int rate) {
+    int speedRotation = speed + rate;
     digitalWrite(A_IN, HIGH);
     digitalWrite(B_IN, HIGH);
     analogWrite(PWMA, speed);
     analogWrite(PWMB, speedRotation);
+}
+
+void MotorController::moveForwardRaw(int speed) {
+    digitalWrite(A_IN, HIGH);
+    digitalWrite(B_IN, HIGH);
+    analogWrite(PWMA, speed);
+    analogWrite(PWMB, speed);
 }
 
 void MotorController::moveForward(int speed, unsigned long durationMs) {

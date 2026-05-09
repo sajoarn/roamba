@@ -16,9 +16,9 @@ import numpy as np
 # ============================================================================
 
 # Constants for video capture settings
-FRAME_WIDTH = 640
-FRAME_HEIGHT = 480
-CAMERA_SOURCE = '../resources/vids/single_lane.mp4'  # Path to video file or 0 for camera
+FRAME_WIDTH = 800
+FRAME_HEIGHT = 600
+CAMERA_SOURCE = '../resources/vids/webcam_lane.mp4'  # Path to video file or 0 for camera
 WINDOW_NAME = 'HSV'
 DISPLAY_WINDOW = 'Horizontal Stacking'
 
@@ -42,7 +42,7 @@ def create_hsv_trackbars(window_name: str) -> None:
     @param window_name Name of the OpenCV window.
     """
     cv2.namedWindow(window_name)
-    cv2.resizeWindow(window_name, 640, 240)
+    cv2.resizeWindow(window_name, 480, 240)
     cv2.createTrackbar("HUE Min", window_name, 0, 179, empty)
     cv2.createTrackbar("HUE Max", window_name, 179, 179, empty)
     cv2.createTrackbar("SAT Min", window_name, 0, 255, empty)
@@ -98,6 +98,7 @@ def main() -> None:
         success, img = cap.read()
         if not success or img is None:
             break
+        img = cv2.resize(img, dsize=(FRAME_WIDTH, FRAME_HEIGHT), fx=0.5, fy=0.5)
 
         # Convert to HSV color space
         img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
